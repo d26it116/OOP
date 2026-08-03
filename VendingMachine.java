@@ -1,6 +1,7 @@
 
 import java.util.Scanner;
 
+// Enum to store the available coin types.
 enum Coin {
     ONE, TWO, FIVE, TEN
 }
@@ -11,11 +12,13 @@ public class VendingMachine {
         int total = 0;
         Scanner sc = new Scanner(System.in);
 
-
+     // Keep asking for coins until payment is complete.
     while(true) {
 
         System.out.print("Enter coin (ONE, TWO, FIVE, TEN): ");
         Coin coin;
+
+          // Try to convert user input into a valid coin
         try {
                 coin = Coin.valueOf(sc.next().toUpperCase());
             } catch (IllegalArgumentException e) {
@@ -33,6 +36,7 @@ public class VendingMachine {
        
         total += value;
 
+    
         if (total <15 ) {
             System.out.println("  Inserted so far: " + total);
             
