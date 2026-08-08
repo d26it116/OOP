@@ -25,7 +25,6 @@ public class Driver {
                 count++;
             }
         }
-
         System.out.println(points.length + " points with "+ (points.length - count) + " repeats -> " + "Distinct: " + count);
     }
 }
