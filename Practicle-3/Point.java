@@ -13,6 +13,7 @@ public class Point {
         return "(" + x + ", " + y + ")";
     }
 
+
     @Override
     public boolean equals(Object obj) {
         Point p = (Point) obj;
