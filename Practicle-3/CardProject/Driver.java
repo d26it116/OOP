@@ -13,6 +13,7 @@ public class Driver {
             for (int j = 0; j < i; j++) {
 
                 if (cards[i].equals(cards[j])) {
+                    
                     System.out.println("a second " + cards[i] +" ->"+ " Duplicate found: " + cards[i]);
                     return;
                 }
