@@ -15,7 +15,7 @@ public class ChatFilter {
             String user = parts[1];
             String message = parts[2];
 
-            if (message.toLowerCase().contains(keyword.toLowerCase())) {
+            if ((message.toLowerCase().contains(keyword.toLowerCase())) || user.toLowerCase().contains(keyword.toLowerCase())) {
                 count++;
                 report.append(time)
                       .append(" ")
