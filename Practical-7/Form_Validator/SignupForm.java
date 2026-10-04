@@ -5,6 +5,7 @@ public class SignupForm {
     @MaxLength(20)
     private String name;
 
+    
     @NotBlank
     @MaxLength(50)
     private String email;

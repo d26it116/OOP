@@ -1,12 +1,9 @@
-package Form_Validator;
-import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-
+import java.lang.annotation.ElementType;
 
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
-public @interface MaxLength {
-    int value();
+@Target(ElementType.METHOD)
+public @interface Run {
 }

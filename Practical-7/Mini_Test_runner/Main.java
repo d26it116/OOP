@@ -4,6 +4,7 @@ public class Main {
 
         MyTests tests = new MyTests();
 
+        
         MiniTestRunner.runTests(tests);
     }
 }

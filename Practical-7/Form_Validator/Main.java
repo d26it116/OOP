@@ -20,6 +20,7 @@ public class Main {
 
             for (String error : errors) {
                 System.out.println(error);
+                
             }
         }
     }

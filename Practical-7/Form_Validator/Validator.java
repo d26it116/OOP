@@ -5,6 +5,7 @@ import java.util.List;
 
 public class Validator {
 
+    
     public static List<String> validate(Object object) {
 
         List<String> errors = new ArrayList<>();
