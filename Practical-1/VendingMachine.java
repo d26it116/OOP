@@ -19,6 +19,7 @@ public class VendingMachine {
         Coin coin;
 
           // Try to convert user input into a valid coin
+          
         try {
                 coin = Coin.valueOf(sc.next().toUpperCase());
             } catch (IllegalArgumentException e) {
