@@ -15,6 +15,18 @@ public class Validator {
     private static final Pattern IFSC =
             Pattern.compile("^[A-Z]{4}0[A-Z0-9]{6}$");
 
+    public static boolean isValidOwnerName(String name) {
+        return name != null && !name.trim().isEmpty() && name.trim().length() <= 50;
+    }
+
+    public static boolean isValidAmount(long amount) {
+        return amount > 0;
+    }
+
+    public static boolean isValidOpeningBalance(long amount) {
+        return amount >= 0;
+    }
+
     public static boolean isValidMobile(String mobile) {
         return MOBILE.matcher(mobile).matches();
     }

@@ -1,235 +1,158 @@
+import exception.BankException;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 import java.util.Scanner;
 import model.Account;
-import model.CurrentAccount;
-import model.FixedDeposite;
-import model.SavingsAccount;
-import util.AnnotationValidator;
-import util.Command;
-import util.CommandParser;
-import util.StatementFormat;
-import util.Validator;
-import util.WithdrawRule;
+import model.TransactionType;
+
 public class MiniBank {
+    private static final Path ACCOUNTS_FILE = Paths.get("data", "accounts.ser");
+    private static final Path TRANSACTION_LOG = Paths.get("logs", "transactions.log");
+    private static final Path REPORT_FILE = Paths.get("reports", "end-of-day.txt");
 
-    record BankInfo(String name, String branch) {
-    }
-
-    // Menu options
-    enum MenuOption {
-        OPEN_ACCOUNT,
-        DEPOSIT,
-        WITHDRAW,
-        TRANSFER,
-        EXIT
-    }
-
-    public static void main(String[] args) {
-
-        Scanner sc = new Scanner(System.in);
-
-        BankInfo bank = new BankInfo("MiniBank", "CHARUSAT Branch");
-
-        System.out.println("================================");
-        System.out.println("          " + bank.name());
-        System.out.println("          " + bank.branch());
-        System.out.println("================================");
-
-        // Create different types of accounts
-        Account[] accounts = new Account[3];
-
-        accounts[0] = new SavingsAccount("Aaryan", 5000, 1000);
-        accounts[1] = new CurrentAccount("Rahul", 2000, 3000);
-        accounts[2] = new FixedDeposite("Jay", 10000);
-
-        // Perform deposits and withdrawals
-        accounts[0].deposit(500);
-        accounts[0].withdraw(200);
-
-        accounts[1].deposit(1000);
-        accounts[1].withdraw(3000);
-
-        accounts[2].deposit(1500);
-
-        // Display account details
-        System.out.println("\n----- Account Details -----");
-
-        for (Account account : accounts) {
-            System.out.println(account);
-        }
-
-        // Equals
-        System.out.println("\n----- Using equals() -----");
-
-        System.out.println("Account 1 equals Account 2: "
-                + accounts[0].equals(accounts[1]));
-
-        // instanceof
-        System.out.println("\n----- Using instanceof -----");
-
-        Object obj = accounts[0];
-
-        if (obj instanceof Account) {
-            System.out.println("Object is an Account");
-        }
-
-        // Task 6 - Runtime Polymorphism
-        System.out.println("\n----- Interest Rates -----");
-
-        for (Account account : accounts) {
-
-            System.out.println(
-                    account.getOwnerName()
-                    + " : "
-                    + account.interestRate()
-                    + "%"
-            );
-        }
-
-        // Pattern matching instanceof
-        System.out.println("\n----- Savings Account Check -----");
-
-        for (Account account : accounts) {
-
-            if (account instanceof SavingsAccount savings) {
-
-                System.out.println(
-                        savings.getOwnerName()
-                        + " is a Savings Account"
-                );
+    public static void main(String[] args) throws IOException {
+        Repository<Account> repository = new Repository<>();
+        if (Files.exists(ACCOUNTS_FILE)) {
+            for (Account account : StatePersister.load(ACCOUNTS_FILE)) {
+                repository.save(account);
             }
         }
 
-        // Validator Testing
-        System.out.println("\n----- Validator Testing -----");
+        BankService bank = new BankService(repository);
+        System.out.println("Welcome to MiniBank");
+        try (Scanner scanner = new Scanner(System.in)) {
+            while (true) {
+                System.out.println("\n1. Open account");
+                System.out.println("2. Deposit");
+                System.out.println("3. Withdraw");
+                System.out.println("4. Transfer");
+                System.out.println("5. Account statement");
+                System.out.println("6. List accounts");
+                System.out.println("7. Process transaction batch");
+                System.out.println("8. Generate report");
+                System.out.println("9. Exit");
+                System.out.print("Choice: ");
 
-        // Mobile
-        System.out.println("Valid Mobile: "
-                + Validator.isValidMobile("9876543210"));
-
-        System.out.println("Invalid Mobile: "
-                + Validator.isValidMobile("12345"));
-
-        // Email
-        System.out.println("Valid Email: "
-                + Validator.isValidEmail("aaryan@gmail.com"));
-
-        System.out.println("Invalid Email: "
-                + Validator.isValidEmail("aaryan@gmail"));
-
-        // PAN
-        System.out.println("Valid PAN: "
-                + Validator.isValidPan("ABCDE1234F"));
-
-        System.out.println("Invalid PAN: "
-                + Validator.isValidPan("ABC1234F"));
-
-        // IFSC
-        System.out.println("Valid IFSC: "
-                + Validator.isValidIfsc("SBIN0001234"));
-
-        System.out.println("Invalid IFSC: "
-                + Validator.isValidIfsc("SBI1234"));
-
-        // Command Parser Testing
-        System.out.println("\n----- Command Parser -----");
-
-        Command command =
-                CommandParser.parse("DEPOSIT AC0001 500");
-
-        System.out.println("Type: " + command.type());
-
-        System.out.println("Account Number: "
-                + command.accountNumber());
-
-        System.out.println("Amount: " + command.amount());
-
-        // Statement Formatter Testing
-        System.out.println("\n----- Account Statement -----");
-
-        System.out.println(
-                StatementFormat.buildStatement(accounts[0])
-        );
-
-                // Task 3 - WithdrawRule
-
-        System.out.println("\n----- Withdraw Rule -----");
-
-        // Using anonymous class
-        WithdrawRule rule1 = new WithdrawRule() {
-
-            @Override
-            public boolean allow(Account account, long amount) {
-                return account.canWithdraw(amount);
+                if (!scanner.hasNextLine()) {
+                    break;
+                }
+                String choice = scanner.nextLine().trim();
+                try {
+                    switch (choice) {
+                        case "1" -> openAccount(scanner, bank);
+                        case "2" -> deposit(scanner, bank);
+                        case "3" -> withdraw(scanner, bank);
+                        case "4" -> transfer(scanner, bank);
+                        case "5" -> System.out.println(bank.statement(prompt(scanner, "Account number: ")));
+                        case "6" -> bank.listAccounts().forEach(System.out::println);
+                        case "7" -> processBatch(scanner, bank);
+                        case "8" -> System.out.println(ReportGenerator.generate(
+                                TRANSACTION_LOG.getParent(), REPORT_FILE));
+                        case "9" -> {
+                            System.out.println("Thank you for using MiniBank.");
+                            return;
+                        }
+                        default -> System.out.println("Invalid choice. Please choose 1 to 9.");
+                    }
+                } catch (BankException exception) {
+                    System.out.println("Operation failed: " + exception.getMessage());
+                } catch (IllegalArgumentException exception) {
+                    System.out.println("Invalid input: " + exception.getMessage());
+                }
             }
-        };
-
-        System.out.println(
-                "Anonymous class: "
-                + rule1.allow(accounts[0], 1000)
-        );
-
-        // Using lambda expression
-        WithdrawRule rule2 =
-                (account, amount) -> account.canWithdraw(amount);
-
-        System.out.println(
-                "Lambda expression: "
-                + rule2.allow(accounts[0], 1000)
-        );
-
-        System.out.println("\n----- Annotation Validation -----");
-
-        Account testAccount =
-                new SavingsAccount("Aaryan", -5000, 1000);
-
-        String[] errors =
-                AnnotationValidator.validate(testAccount);
-
-        for (String error : errors) {
-            System.out.println(error);
+        } finally {
+            saveAccounts(bank);
         }
-        // MiniBank Menu
-        int choice;
+    }
 
-        do {
+    private static void openAccount(Scanner scanner, BankService bank) throws BankException {
+        String owner = prompt(scanner, "Owner name: ");
+        System.out.print("Account type (SAVINGS/CURRENT/FIXED): ");
+        String type = scanner.nextLine();
+        long balance = readLong(scanner, "Opening balance: ");
+        Account account = bank.openAccount(owner, type, balance);
+        System.out.println("Account opened: " + account.getAccountNumber());
+    }
 
-            System.out.println("\n----- MiniBank Menu -----");
-            System.out.println("1. Open Account");
-            System.out.println("2. Deposit");
-            System.out.println("3. Withdraw");
-            System.out.println("4. Transfer");
-            System.out.println("5. Exit");
+    private static void deposit(Scanner scanner, BankService bank) throws BankException, IOException {
+        String accountNumber = prompt(scanner, "Account number: ");
+        long amount = readLong(scanner, "Deposit amount: ");
+        Account account = bank.deposit(accountNumber, amount);
+        log("DEPOSIT," + amount);
+        System.out.println("Deposit complete. Balance: " + account.getBalance());
+    }
 
-            System.out.print("Enter your choice: ");
-            choice = sc.nextInt();
+    private static void withdraw(Scanner scanner, BankService bank) throws BankException, IOException {
+        String accountNumber = prompt(scanner, "Account number: ");
+        long amount = readLong(scanner, "Withdrawal amount: ");
+        Account account = bank.withdraw(accountNumber, amount);
+        log("WITHDRAW," + amount);
+        System.out.println("Withdrawal complete. Balance: " + account.getBalance());
+    }
 
-            String result = switch (choice) {
+    private static void transfer(Scanner scanner, BankService bank) throws BankException, IOException {
+        String from = prompt(scanner, "From account: ");
+        String to = prompt(scanner, "To account: ");
+        long amount = readLong(scanner, "Transfer amount: ");
+        bank.transfer(from, to, amount);
+        log("WITHDRAW," + amount, "DEPOSIT," + amount);
+        System.out.println("Transfer complete.");
+    }
 
-                case 1 ->
-                        "Open Account - to be implemented in a later lab";
+    private static void processBatch(Scanner scanner, BankService bank) throws BankException, IOException {
+        long transactionCount = readLong(scanner, "Number of transactions: ");
+        if (transactionCount < 0 || transactionCount > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("Transaction count is out of range.");
+        }
+        int count = (int) transactionCount;
 
-                case 2 ->
-                        "Deposit - to be implemented in a later lab";
+        List<BankService.BatchTransaction> transactions = new ArrayList<>();
+        List<String> logEntries = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            System.out.print("Transaction " + (i + 1) + " type (DEPOSIT/WITHDRAW/TRANSFER): ");
+            TransactionType type = TransactionType.valueOf(scanner.nextLine().trim().toUpperCase(Locale.ROOT));
+            String account = prompt(scanner, "Account number: ");
+            String destination = type == TransactionType.TRANSFER
+                    ? prompt(scanner, "Destination account: ")
+                    : null;
+            long amount = readLong(scanner, "Amount: ");
+            transactions.add(new BankService.BatchTransaction(type, account, destination, amount));
+            if (type == TransactionType.DEPOSIT) {
+                logEntries.add("DEPOSIT," + amount);
+            } else if (type == TransactionType.WITHDRAW) {
+                logEntries.add("WITHDRAW," + amount);
+            } else {
+                logEntries.add("WITHDRAW," + amount);
+                logEntries.add("DEPOSIT," + amount);
+            }
+        }
 
-                case 3 ->
-                        "Withdraw - to be implemented in a later lab";
+        bank.processBatch(transactions);
+        log(logEntries.toArray(new String[0]));
+        System.out.println("Batch complete: " + count + " transactions processed.");
+    }
 
-                case 4 ->
-                        "Transfer - to be implemented in a later lab";
+    private static String prompt(Scanner scanner, String message) {
+        System.out.print(message);
+        return scanner.nextLine().trim();
+    }
 
-                case 5 ->
-                        "Exiting MiniBank...";
+    private static long readLong(Scanner scanner, String message) {
+        return Long.parseLong(prompt(scanner, message));
+    }
 
-                default ->
-                        "Invalid choice. Please try again.";
-            };
+    private static void log(String... entries) throws IOException {
+        for (String entry : entries) {
+            TransactionLog.append(TRANSACTION_LOG, entry);
+        }
+    }
 
-            System.out.println(result);
-
-        } while (choice != 5);
-
-        System.out.println("Thank you for using MiniBank!");
-
-        sc.close();
+    private static void saveAccounts(BankService bank) throws IOException {
+        StatePersister.save(bank.listAccounts().toArray(new Account[0]), ACCOUNTS_FILE);
     }
 }
